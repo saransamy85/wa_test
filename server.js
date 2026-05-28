@@ -1,18 +1,18 @@
 const express = require('express');
-const cors = require('cors');
-const qrcode = require('qrcode-terminal');
 
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const {
+    Client,
+    LocalAuth
+} = require('whatsapp-web.js');
+
+const qrcode = require('qrcode');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+let qrImage = null;
 
 /*
-|--------------------------------------------------------------------------
-| WhatsApp Client
-|--------------------------------------------------------------------------
+WHATSAPP CLIENT
 */
 
 const client = new Client({
@@ -20,191 +20,154 @@ const client = new Client({
     authStrategy: new LocalAuth(),
 
     puppeteer: {
-        headless: true,
 
-        executablePath:
-            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        headless: true,
 
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox'
         ]
+
     }
+
 });
 
 /*
-|--------------------------------------------------------------------------
-| QR Code
-|--------------------------------------------------------------------------
+QR EVENT
 */
 
-client.on('qr', (qr) => {
+client.on('qr', async (qr) => {
 
-    console.log('Scan this QR Code:\n');
+    console.log('QR RECEIVED');
 
-    qrcode.generate(qr, {
-        small: true
-    });
+    qrImage =
+        await qrcode.toDataURL(qr);
 
 });
 
 /*
-|--------------------------------------------------------------------------
-| Ready
-|--------------------------------------------------------------------------
+READY
 */
 
 client.on('ready', () => {
 
-    console.log('WhatsApp Ready!');
+    console.log('WhatsApp Ready');
 
 });
 
 /*
-|--------------------------------------------------------------------------
-| Authenticated
-|--------------------------------------------------------------------------
+AUTHENTICATED
 */
 
 client.on('authenticated', () => {
 
-    console.log('WhatsApp Authenticated');
+    console.log('Authenticated');
 
 });
 
 /*
-|--------------------------------------------------------------------------
-| Authentication Failure
-|--------------------------------------------------------------------------
+AUTH FAILURE
 */
 
-client.on('auth_failure', (msg) => {
+client.on('auth_failure', msg => {
 
-    console.log('Authentication Failed:', msg);
+    console.log(
+        'AUTH FAILURE',
+        msg
+    );
 
 });
 
 /*
-|--------------------------------------------------------------------------
-| Disconnected
-|--------------------------------------------------------------------------
+DISCONNECTED
 */
 
-client.on('disconnected', (reason) => {
+client.on('disconnected', reason => {
 
-    console.log('WhatsApp Disconnected:', reason);
+    console.log(
+        'Disconnected',
+        reason
+    );
 
 });
 
 /*
-|--------------------------------------------------------------------------
-| Initialize WhatsApp
-|--------------------------------------------------------------------------
+INITIALIZE
 */
 
 client.initialize();
 
 /*
-|--------------------------------------------------------------------------
-| Send Message API
-|--------------------------------------------------------------------------
-*/
-
-app.post('/send-message', async (req, res) => {
-
-    try {
-
-        /*
-        CONVERT TO STRING
-        */
-
-        let mobile = String(req.body.number)
-            .replace(/\D/g, '');
-
-        /*
-        REMOVE EXTRA 91
-        */
-
-        if (
-            mobile.startsWith('91') &&
-            mobile.length > 10
-        ) {
-            mobile = mobile.substring(2);
-        }
-
-        /*
-        WHATSAPP FORMAT
-        */
-
-        const number = `91${mobile}@c.us`;
-
-        const message = req.body.message;
-
-        console.log('Sending To:', number);
-
-        /*
-        CHECK NUMBER EXISTS
-        */
-
-        const isRegistered =
-            await client.isRegisteredUser(number);
-
-        if (!isRegistered) {
-
-            return res.json({
-                status: false,
-                error: 'Number not registered on WhatsApp'
-            });
-
-        }
-
-        /*
-        SEND MESSAGE
-        */
-
-        const result =
-            await client.sendMessage(number, message);
-
-        res.json({
-            status: true,
-            message: 'WhatsApp Sent Successfully',
-            id: result.id.id
-        });
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.json({
-            status: false,
-            error: err.message
-        });
-
-    }
-
-});
-/*
-|--------------------------------------------------------------------------
-| Home Route
-|--------------------------------------------------------------------------
+HOME
 */
 
 app.get('/', (req, res) => {
 
-    res.send('WhatsApp Server Running');
+    res.send(
+        'WhatsApp Dashboard Running'
+    );
 
 });
 
 /*
-|--------------------------------------------------------------------------
-| Start Server
-|--------------------------------------------------------------------------
+QR PAGE
 */
 
-const PORT = 3000;
+app.get('/qr', (req, res) => {
+
+    if (!qrImage) {
+
+        return res.send(
+            'QR Loading...'
+        );
+
+    }
+
+    res.send(`
+        <h2>Scan QR</h2>
+        <img src="${qrImage}" />
+    `);
+
+});
+
+/*
+STATUS
+*/
+
+app.get('/status', (req, res) => {
+
+    if (client.info) {
+
+        return res.json({
+
+            connected: true,
+
+            number:
+                client.info.wid.user
+
+        });
+
+    }
+
+    res.json({
+
+        connected: false
+
+    });
+
+});
+
+/*
+PORT
+*/
+
+const PORT =
+    process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
-    console.log(`Server running on port ${PORT}`);
+    console.log(
+        'Server Running'
+    );
 
 });
