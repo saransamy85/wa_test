@@ -162,21 +162,68 @@ app.get('/send', async (req, res) => {
 
     try {
 
-        const number =
+        /*
+        CHECK WHATSAPP READY
+        */
+
+        if (!client.info) {
+
+            return res.json({
+
+                status: false,
+                error: 'WhatsApp not connected'
+
+            });
+
+        }
+
+        let number =
             req.query.number;
 
         const message =
             req.query.message;
 
+        /*
+        CLEAN NUMBER
+        */
+
+        number = number.replace(/\D/g, '');
+
+        /*
+        CREATE CHAT ID
+        */
+
         const chatId =
             number + '@c.us';
+
+        /*
+        CHECK REGISTERED
+        */
+
+        const isRegistered =
+            await client.isRegisteredUser(chatId);
+
+        if (!isRegistered) {
+
+            return res.json({
+
+                status: false,
+                error: 'Number not in WhatsApp'
+
+            });
+
+        }
+
+        /*
+        SEND MESSAGE
+        */
 
         await client.sendMessage(
             chatId,
             message
         );
 
-        res.json({
+        return res.json({
 
             status: true,
             message: 'Message Sent'
@@ -185,7 +232,7 @@ app.get('/send', async (req, res) => {
 
     } catch (error) {
 
-        res.json({
+        return res.json({
 
             status: false,
             error: error.message
