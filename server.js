@@ -1,4 +1,5 @@
 const express = require('express');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 
 const {
     Client,
@@ -15,6 +16,8 @@ let qrCodeImage = null;
 WHATSAPP CLIENT
 */
 
+
+
 const client = new Client({
 
     authStrategy: new LocalAuth(),
@@ -23,15 +26,18 @@ const client = new Client({
 
         headless: true,
 
+        executablePath: '/usr/bin/google-chrome',
+
         args: [
             '--no-sandbox',
-            '--disable-setuid-sandbox'
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu'
         ]
 
     }
 
 });
-
 /*
 QR EVENT
 */
