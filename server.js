@@ -26,7 +26,7 @@ const client = new Client({
 
         headless: true,
 
-        executablePath: '/usr/bin/google-chrome',
+        executablePath: '/usr/bin/chromium',
 
         args: [
             '--no-sandbox',
