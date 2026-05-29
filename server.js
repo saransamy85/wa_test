@@ -16,17 +16,17 @@ let qrCodeImage = null;
 WHATSAPP CLIENT
 */
 
-
-
 const client = new Client({
 
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({
+
+        dataPath: './sessions'
+
+    }),
 
     puppeteer: {
 
         headless: true,
-
-        
 
         args: [
             '--no-sandbox',
